@@ -26,13 +26,7 @@ class TokenBucket:
         Returns:
             bool: True if within limit, False if throttled
         """
-
-        # calculate elapsed time
-        elapsed_time = self.time_fn() - self.last_refill_time
-        # calculate tokens to add
-        new_tokens = elapsed_time * self.refill_rate
-        # update tokens and timestamp
-        self.current_count = min(self.capacity, self.current_count + new_tokens)
+        self.current_count = self.get_tokens_remaining()
         self.last_refill_time = self.time_fn()
         # check if alloweed, consume if yes, return
         if self.current_count >= 1:
@@ -43,4 +37,8 @@ class TokenBucket:
 
 
     def get_tokens_remaining(self):
-        pass
+        # calculate elapsed time
+        elapsed_time = self.time_fn() - self.last_refill_time
+        # calculate tokens to add
+        new_tokens = elapsed_time * self.refill_rate
+        return min(self.capacity, self.current_count + new_tokens)
