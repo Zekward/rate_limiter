@@ -11,11 +11,13 @@ class TokenBucket:
         last_refill_time: Time at the last request
     """
 
-    def __init__(self, capacity, refill_rate):
+    def __init__(self, capacity, refill_rate, time_fn=time.time):
         self.capacity = capacity
         self.refill_rate = refill_rate
         self.current_count = capacity
-        self.last_refill_time = time.time()
+        self.last_refill_time = time_fn()
+        self.time_fn = time_fn
+
 
     def allow_request(self):
         """
@@ -24,7 +26,21 @@ class TokenBucket:
         Returns:
             bool: True if within limit, False if throttled
         """
-        pass
+
+        # calculate elapsed time
+        elapsed_time = self.time_fn() - self.last_refill_time
+        # calculate tokens to add
+        new_tokens = elapsed_time * self.refill_rate
+        # update tokens and timestamp
+        self.current_count = min(self.capacity, self.current_count + new_tokens)
+        self.last_refill_time = self.time_fn()
+        # check if alloweed, consume if yes, return
+        if self.current_count >= 1:
+            self.current_count -= 1
+            return True
+        return False
+
+
 
     def get_tokens_remaining(self):
         pass
