@@ -1,35 +1,60 @@
 from src.token_bucket import TokenBucket
 
-def test_basic():
-    fake_time = 0.0
+import time
 
-    def mock_time():
-        return fake_time
+class testTime:
+    def __init__(self):
+        self.current_time = time.time()
 
-    limiter = TokenBucket(capacity=10, refill_rate=2, time_fn=mock_time)
+    def __call__(self):
+        return self.current_time
 
-    # Should allow first request at time 0, 10 tokens
-    print(f"inital count: {limiter.get_tokens_remaining()}")
 
-    # Should allow up to 10 requests
+
+def test_initial_capacity():
+    """Initially, bucket should be full"""
+    limiter = TokenBucket(capacity=10, refill_rate=2)
+    assert limiter.get_tokens_remaining() == 10
+
+def test_consume_tokens():
+    """Tokens should be consumed one per request"""
+    test_time = testTime()
+    limiter = TokenBucket(capacity=10, refill_rate=2, time_fn=test_time)
+
     for i in range(10):
         assert limiter.allow_request() == True
-        print(f"current count now: {limiter.get_tokens_remaining()}")
 
-    # 11th test should fail
     assert limiter.allow_request() == False
 
-    assert limiter.current_count == 0
+def test_refill_over_time():
+    """After time passes, tokens should refill"""
+    test_time = testTime()
 
-    fake_time = 4.0
-    print(f"after 4 seconds: {limiter.get_tokens_remaining()}")
+    limiter = TokenBucket(capacity=10, refill_rate=2, time_fn=test_time)
 
-    for i in range(3):
+    for i in range(10):
         limiter.allow_request()
 
-    print(f"after another three requests: {limiter.get_tokens_remaining()}")
+    assert limiter.get_tokens_remaining() == 0
 
-    print("Tests passed")
+    test_time.current_time += 4.0
 
-if __name__ == "__main__":
-    test_basic()
+    assert limiter.get_tokens_remaining() == 8
+
+def test_capacity_never_exceeds_max():
+    test_time = testTime()
+
+    limiter = TokenBucket(capacity=10, refill_rate=2, time_fn=test_time)
+    test_time.current_time += 100.0
+    assert limiter.get_tokens_remaining() == 10
+
+def test_invalid_capacity():
+    try:
+        limiter = TokenBucket(capacity=-5, refill_rate=1)
+        assert False, "should have raised error"
+    except ValueError:
+        pass
+
+  
+
+

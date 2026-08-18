@@ -12,12 +12,16 @@ class TokenBucket:
     """
 
     def __init__(self, capacity, refill_rate, time_fn=time.time):
+        if capacity <= 0:
+            raise ValueError("capacity must be greater than 0")
+        if refill_rate <= 0:
+            raise ValueError("refill rate must be greater than 0")
+
         self.capacity = capacity
         self.refill_rate = refill_rate
         self.current_count = capacity
         self.last_refill_time = time_fn()
         self.time_fn = time_fn
-
 
     def allow_request(self):
         """
@@ -33,8 +37,6 @@ class TokenBucket:
             self.current_count -= 1
             return True
         return False
-
-
 
     def get_tokens_remaining(self):
         # calculate elapsed time
